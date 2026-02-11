@@ -21,7 +21,11 @@
       "WebFetch(domain:polyhaven.com)",
       "WebFetch(domain:api.polyhaven.com)",
       "WebFetch(domain:ambientcg.com)",
-      "Bash(unzip:*)"
+      "Bash(unzip:*)",
+      "Bash(git config:*)",
+      "Bash(git remote:*)",
+      "Bash(git push:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
