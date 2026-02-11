@@ -59,9 +59,9 @@ export function computeTangents(geometry: THREE.BufferGeometry): void {
     vB.fromBufferAttribute(positions, b);
     vC.fromBufferAttribute(positions, c);
 
-    uvA.fromBufferAttribute(uvs, a);
-    uvB.fromBufferAttribute(uvs, b);
-    uvC.fromBufferAttribute(uvs, c);
+    uvA.fromBufferAttribute(uvs as THREE.BufferAttribute, a);
+    uvB.fromBufferAttribute(uvs as THREE.BufferAttribute, b);
+    uvC.fromBufferAttribute(uvs as THREE.BufferAttribute, c);
 
     const x1 = vB.x - vA.x;
     const x2 = vC.x - vA.x;
