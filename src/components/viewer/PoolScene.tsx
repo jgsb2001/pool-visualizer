@@ -32,7 +32,6 @@ export function PoolScene() {
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1.0,
           outputColorSpace: THREE.SRGBColorSpace,
-          pixelRatio: Math.min(window.devicePixelRatio, 2),
         }}
         dpr={[1, 2]}
         frameloop="always"
