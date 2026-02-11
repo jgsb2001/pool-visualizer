@@ -25,7 +25,6 @@ export function PostProcessing() {
         luminanceInfluence={0.5}
         bias={0.025}
         fade={0.01}
-        color="#000000"
         resolutionScale={1.0}
         worldDistanceThreshold={0.3}
         worldDistanceFalloff={0.05}
