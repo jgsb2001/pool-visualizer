@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pool Waterline Tile Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+        }
+
+        #app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        #controls {
+            width: 350px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+        }
+
+        .section h2 {
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .file-upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            background: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .file-upload-area label {
+            display: block;
+            cursor: pointer;
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .upload-hint {
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        #tile-previews {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        #tile-previews img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 2px solid #ddd;
+        }
+
+        .slider-group {
+            margin-bottom: 12px;
+        }
+
+        .slider-group label {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+
+        .slider-value {
+            min-width: 55px;
+            text-align: right;
+            font-weight: 600;
+            color: #667eea;
+            font-size: 0.9rem;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            background: white;
+            cursor: pointer;
+        }
+
+        select:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        #applyBtn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 10px;
+        }
+
+        #applyBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        #applyBtn:active {
+            transform: translateY(0);
+        }
+
+        #loading {
+            text-align: center;
+            padding: 10px;
+            color: #667eea;
+            font-weight: 600;
+            display: none;
+            margin-top: 10px;
+        }
+
+        #canvas-container {
+            flex: 1;
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .info-badge {
+            background: #e8eaff;
+            color: #667eea;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 768px) {
+            #app-container {
+                flex-direction: column;
+            }
+
+            #controls {
+                width: 100%;
+                height: 55vh;
+                order: 2;
+            }
+
+            #canvas-container {
+                height: 45vh;
+                order: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        <div id="controls">
+            <h1>🏊 Pool Waterline Tile Visualizer</h1>
+
+            <div class="info-badge">
+                Upload 1-4 square waterline tiles. Waterline is exactly ONE tile tall. Scroll to zoom in/out.
+            </div>
+
+            <div class="section">
+                <h2>Waterline Tiles</h2>
+
+                <div class="file-upload-area" onclick="document.getElementById('waterlineTiles').click()">
+                    <label for="waterlineTiles">📸 Choose Waterline Tiles</label>
+                    <p class="upload-hint">Click to select up to 4 images</p>
+                </div>
+                <input type="file" id="waterlineTiles" accept="image/*" multiple />
+
+                <div id="tile-previews"></div>
+            </div>
+
+            <div class="section">
+                <h2>Pool Shape</h2>
+                <select id="poolShape">
+                    <option value="rectangle">Rectangle</option>
+                    <option value="oval">Oval</option>
+                    <option value="jellybean">Jellybean / Kidney</option>
+                </select>
+            </div>
+
+            <div class="section">
+                <h2>Tile Settings</h2>
+
+                <div class="slider-group">
+                    <label>Tile Size (inches):</label>
+                    <div class="slider-container">
+                        <input type="range" id="tileSize" min="4" max="8" value="6" step="1" />
+                        <span class="slider-value" id="tileSizeValue">6"×6"</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Pool Dimensions</h2>
+
+                <div class="slider-group">
+                    <label>Length (meters):</label>
+                    <div class="slider-container">
+                        <input type="range" id="poolLength" min="8" max="20" value="12" step="0.5" />
+                        <span class="slider-value" id="lengthValue">12m</span>
+                    </div>
+                </div>
+
+                <div class="slider-group">
+                    <label>Width (meters):</label>
+                    <div class="slider-container">
+                        <input type="range" id="poolWidth" min="4" max="12" value="6" step="0.5" />
+                        <span class="slider-value" id="widthValue">6m</span>
+                    </div>
+                </div>
+
+                <div class="slider-group">
+                    <label>Depth (meters):</label>
+                    <div class="slider-container">
+                        <input type="range" id="poolDepth" min="1" max="3" value="1.8" step="0.1" />
+                        <span class="slider-value" id="depthValue">1.8m</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Water Appearance</h2>
+
+                <div class="slider-group">
+                    <label>Water Opacity:</label>
+                    <div class="slider-container">
+                        <input type="range" id="waterOpacity" min="0.2" max="0.9" value="0.6" step="0.05" />
+                        <span class="slider-value" id="opacityValue">0.6</span>
+                    </div>
+                </div>
+            </div>
+
+            <button id="applyBtn">Apply Tiles & Render Pool</button>
+            <div id="loading">Loading textures...</div>
+        </div>
+
+        <div id="canvas-container">
+            <canvas id="poolCanvas"></canvas>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        let scene, camera, renderer, controls;
+        let poolGroup;
+        let waterlineMesh;
+        let loadedTileImages = [];
+
+        let poolLength = 12;
+        let poolWidth = 6;
+        let poolDepth = 1.8;
+        let tileSizeInches = 6;
+        let waterOpacity = 0.6;
+        let poolShape = 'rectangle';
+
+        function initScene() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(10, 8, 12);
+            camera.lookAt(0, 0, 0);
+
+            const canvas = document.getElementById('poolCanvas');
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 15, 10);
+            scene.add(directionalLight);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.minDistance = 0.1;
+            controls.maxDistance = 50;
+
+            createPool();
+            animate();
+        }
+
+        // Generate points for different pool shapes
+        function generatePoolPerimeterPoints(shape, length, width, segments) {
+            const points = [];
+
+            if (shape === 'rectangle') {
+                // Rectangle: 4 corners with segments along each side
+                const segPerSide = Math.floor(segments / 4);
+
+                // Bottom edge (negative Z)
+                for (let i = 0; i <= segPerSide; i++) {
+                    points.push(new THREE.Vector3(
+                        -length/2 + (length * i / segPerSide),
+                        0,
+                        -width/2
+                    ));
+                }
+                // Right edge (positive X)
+                for (let i = 1; i <= segPerSide; i++) {
+                    points.push(new THREE.Vector3(
+                        length/2,
+                        0,
+                        -width/2 + (width * i / segPerSide)
+                    ));
+                }
+                // Top edge (positive Z)
+                for (let i = 1; i <= segPerSide; i++) {
+                    points.push(new THREE.Vector3(
+                        length/2 - (length * i / segPerSide),
+                        0,
+                        width/2
+                    ));
+                }
+                // Left edge (negative X)
+                for (let i = 1; i < segPerSide; i++) {
+                    points.push(new THREE.Vector3(
+                        -length/2,
+                        0,
+                        width/2 - (width * i / segPerSide)
+                    ));
+                }
+            } else if (shape === 'oval') {
+                // Ellipse parametric equations
+                const a = length / 2; // semi-major axis
+                const b = width / 2;  // semi-minor axis
+
+                for (let i = 0; i < segments; i++) {
+                    const angle = (i / segments) * Math.PI * 2;
+                    points.push(new THREE.Vector3(
+                        a * Math.cos(angle),
+                        0,
+                        b * Math.sin(angle)
+                    ));
+                }
+            } else if (shape === 'jellybean') {
+                // Kidney/jellybean shape: two different radius ends connected by curves
+                const bigRadius = width / 2;
+                const smallRadius = width / 3;
+                const bodyLength = length - bigRadius - smallRadius;
+
+                // Start from bottom-left, go clockwise
+                const halfSegs = Math.floor(segments / 2);
+                const quarterSegs = Math.floor(segments / 4);
+
+                // Left semicircle (larger)
+                for (let i = 0; i <= halfSegs; i++) {
+                    const angle = Math.PI/2 + (i / halfSegs) * Math.PI;
+                    points.push(new THREE.Vector3(
+                        -bodyLength/2 + bigRadius * Math.cos(angle),
+                        0,
+                        bigRadius * Math.sin(angle)
+                    ));
+                }
+
+                // Bottom curve connecting to right side (inward curve for kidney shape)
+                const curveDepth = width * 0.15; // How much the kidney indents
+                for (let i = 1; i < quarterSegs; i++) {
+                    const t = i / quarterSegs;
+                    const x = -bodyLength/2 + t * bodyLength;
+                    // Quadratic bezier for the indent
+                    const indent = 4 * t * (1 - t) * curveDepth;
+                    points.push(new THREE.Vector3(
+                        x,
+                        0,
+                        -bigRadius + (bigRadius - smallRadius) * t + indent
+                    ));
+                }
+
+                // Right semicircle (smaller)
+                for (let i = 0; i <= halfSegs; i++) {
+                    const angle = -Math.PI/2 + (i / halfSegs) * Math.PI;
+                    points.push(new THREE.Vector3(
+                        bodyLength/2 + smallRadius * Math.cos(angle),
+                        0,
+                        smallRadius * Math.sin(angle)
+                    ));
+                }
+
+                // Top curve connecting back to left side (outward curve)
+                for (let i = 1; i < quarterSegs; i++) {
+                    const t = i / quarterSegs;
+                    const x = bodyLength/2 - t * bodyLength;
+                    // Slight outward curve on top
+                    const bulge = 4 * t * (1 - t) * curveDepth * 0.5;
+                    points.push(new THREE.Vector3(
+                        x,
+                        0,
+                        smallRadius + (bigRadius - smallRadius) * t + bulge
+                    ));
+                }
+            }
+
+            return points;
+        }
+
+        // Calculate cumulative arc lengths for proper UV mapping
+        function calculateArcLengths(points) {
+            const arcLengths = [0];
+            let totalLength = 0;
+
+            for (let i = 1; i < points.length; i++) {
+                const dist = points[i].distanceTo(points[i - 1]);
+                totalLength += dist;
+                arcLengths.push(totalLength);
+            }
+
+            // Add distance back to start for closed loop
+            const closingDist = points[0].distanceTo(points[points.length - 1]);
+            totalLength += closingDist;
+
+            return { arcLengths, totalLength };
+        }
+
+        // Create waterline geometry with proper arc-length UV mapping
+        function createWaterlineGeometry(shape, length, width, height, tileSizeMeters) {
+            const segments = 128; // High segment count for smooth curves
+            const points = generatePoolPerimeterPoints(shape, length, width, segments);
+            const { arcLengths, totalLength } = calculateArcLengths(points);
+
+            // Calculate how many tiles fit around the perimeter
+            const tilesAround = Math.ceil(totalLength / tileSizeMeters);
+
+            // Create geometry
+            const geometry = new THREE.BufferGeometry();
+            const vertices = [];
+            const uvs = [];
+            const indices = [];
+
+            // Generate vertices and UVs
+            for (let i = 0; i <= points.length; i++) {
+                const idx = i % points.length;
+                const point = points[idx];
+
+                // Calculate direction to next point for normal
+                const nextIdx = (i + 1) % points.length;
+                const nextPoint = points[nextIdx];
+
+                const dir = new THREE.Vector3().subVectors(nextPoint, point).normalize();
+                const normal = new THREE.Vector3(-dir.z, 0, dir.x); // Perpendicular, pointing outward
+
+                // Small offset outward for the waterline surface
+                const offset = 0.02;
+
+                // Bottom vertex
+                vertices.push(
+                    point.x + normal.x * offset,
+                    0,
+                    point.z + normal.z * offset
+                );
+
+                // Top vertex
+                vertices.push(
+                    point.x + normal.x * offset,
+                    height,
+                    point.z + normal.z * offset
+                );
+
+                // UV coordinates based on arc length - THIS IS THE KEY FIX!
+                // U coordinate = cumulative arc length / tile size (for proper tile count)
+                // This ensures tiles stay square regardless of curve
+                const arcLength = i < points.length ? arcLengths[i] : totalLength;
+                const u = arcLength / tileSizeMeters;
+
+                uvs.push(u, 0); // Bottom
+                uvs.push(u, 1); // Top
+            }
+
+            // Generate indices for triangles
+            for (let i = 0; i < points.length; i++) {
+                const base = i * 2;
+                const next = ((i + 1) % (points.length + 1)) * 2;
+
+                // Two triangles per quad
+                indices.push(base, next, base + 1);
+                indices.push(next, next + 1, base + 1);
+            }
+
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+            geometry.setIndex(indices);
+            geometry.computeVertexNormals();
+
+            return { geometry, tilesAround, totalLength };
+        }
+
+        // Create pool floor shape
+        function createPoolFloorGeometry(shape, length, width) {
+            if (shape === 'rectangle') {
+                return new THREE.PlaneGeometry(length, width);
+            }
+
+            const segments = 64;
+            const points = generatePoolPerimeterPoints(shape, length, width, segments);
+
+            // Create shape from points
+            const shape2D = new THREE.Shape();
+            shape2D.moveTo(points[0].x, points[0].z);
+            for (let i = 1; i < points.length; i++) {
+                shape2D.lineTo(points[i].x, points[i].z);
+            }
+            shape2D.closePath();
+
+            return new THREE.ShapeGeometry(shape2D, segments);
+        }
+
+        // Create pool walls geometry
+        function createPoolWallsGeometry(shape, length, width, wallHeight) {
+            const segments = 64;
+            const points = generatePoolPerimeterPoints(shape, length, width, segments);
+
+            const geometry = new THREE.BufferGeometry();
+            const vertices = [];
+            const uvs = [];
+            const indices = [];
+
+            for (let i = 0; i <= points.length; i++) {
+                const idx = i % points.length;
+                const point = points[idx];
+
+                // Bottom vertex (at pool floor)
+                vertices.push(point.x, -wallHeight, point.z);
+                // Top vertex (at waterline bottom)
+                vertices.push(point.x, 0, point.z);
+
+                const u = i / points.length;
+                uvs.push(u, 0);
+                uvs.push(u, 1);
+            }
+
+            for (let i = 0; i < points.length; i++) {
+                const base = i * 2;
+                const next = ((i + 1) % (points.length + 1)) * 2;
+
+                indices.push(base, base + 1, next);
+                indices.push(next, base + 1, next + 1);
+            }
+
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+            geometry.setIndex(indices);
+            geometry.computeVertexNormals();
+
+            return geometry;
+        }
+
+        // Create coping (edge) geometry
+        function createCopingGeometry(shape, length, width, copingWidth, copingHeight, waterlineHeight) {
+            const segments = 64;
+            const points = generatePoolPerimeterPoints(shape, length, width, segments);
+
+            const group = new THREE.Group();
+            const copingMat = new THREE.MeshStandardMaterial({ color: 0xd4d4d4 });
+
+            // Create coping segments around the perimeter
+            for (let i = 0; i < points.length; i++) {
+                const curr = points[i];
+                const next = points[(i + 1) % points.length];
+
+                const dir = new THREE.Vector3().subVectors(next, curr);
+                const segLength = dir.length();
+                dir.normalize();
+
+                const normal = new THREE.Vector3(-dir.z, 0, dir.x);
+                const midPoint = new THREE.Vector3().addVectors(curr, next).multiplyScalar(0.5);
+
+                // Position coping segment
+                const copingGeo = new THREE.BoxGeometry(segLength + 0.01, copingHeight, copingWidth);
+                const copingMesh = new THREE.Mesh(copingGeo, copingMat);
+
+                copingMesh.position.set(
+                    midPoint.x + normal.x * copingWidth/2,
+                    waterlineHeight + copingHeight/2,
+                    midPoint.z + normal.z * copingWidth/2
+                );
+
+                // Rotate to align with edge
+                const angle = Math.atan2(dir.z, dir.x);
+                copingMesh.rotation.y = -angle;
+
+                group.add(copingMesh);
+            }
+
+            return group;
+        }
+
+        function createPool() {
+            if (poolGroup) {
+                scene.remove(poolGroup);
+            }
+
+            poolGroup = new THREE.Group();
+
+            // Calculate waterline height - exactly ONE tile tall
+            const tileSizeMeters = tileSizeInches * 0.0254;
+            const waterlineHeight = tileSizeMeters;
+
+            // Pool floor
+            const floorGeo = createPoolFloorGeometry(poolShape, poolLength, poolWidth);
+            const floorMesh = new THREE.Mesh(
+                floorGeo,
+                new THREE.MeshStandardMaterial({ color: 0x4a90a4 })
+            );
+            floorMesh.rotation.x = -Math.PI / 2;
+            floorMesh.position.y = -poolDepth;
+            poolGroup.add(floorMesh);
+
+            // Pool walls (below waterline)
+            const wallHeight = poolDepth - waterlineHeight;
+            const wallGeo = createPoolWallsGeometry(poolShape, poolLength, poolWidth, wallHeight);
+            const wallMesh = new THREE.Mesh(
+                wallGeo,
+                new THREE.MeshStandardMaterial({ color: 0x5aa5ba, side: THREE.DoubleSide })
+            );
+            wallMesh.position.y = -wallHeight;
+            poolGroup.add(wallMesh);
+
+            // WATERLINE - with proper arc-length UV mapping
+            const { geometry: waterlineGeo, tilesAround, totalLength } =
+                createWaterlineGeometry(poolShape, poolLength, poolWidth, waterlineHeight, tileSizeMeters);
+
+            waterlineMesh = new THREE.Mesh(
+                waterlineGeo,
+                new THREE.MeshStandardMaterial({
+                    color: 0xffffff,
+                    side: THREE.DoubleSide
+                })
+            );
+            waterlineMesh.userData = {
+                tilesAround,
+                totalLength,
+                height: waterlineHeight,
+                tileSizeMeters
+            };
+            poolGroup.add(waterlineMesh);
+
+            console.log(`Pool shape: ${poolShape}, Perimeter: ${totalLength.toFixed(2)}m, Tiles around: ${tilesAround}`);
+
+            // Water surface
+            const waterGeo = createPoolFloorGeometry(poolShape, poolLength, poolWidth);
+            const waterMesh = new THREE.Mesh(
+                waterGeo,
+                new THREE.MeshStandardMaterial({
+                    color: 0x1e88e5,
+                    transparent: true,
+                    opacity: waterOpacity,
+                    side: THREE.DoubleSide
+                })
+            );
+            waterMesh.rotation.x = -Math.PI / 2;
+            waterMesh.position.y = -0.05;
+            poolGroup.add(waterMesh);
+
+            // Coping
+            const copingGroup = createCopingGeometry(
+                poolShape, poolLength, poolWidth,
+                0.4, 0.1, waterlineHeight
+            );
+            poolGroup.add(copingGroup);
+
+            scene.add(poolGroup);
+
+            if (loadedTileImages.length > 0) {
+                applyTilesToWaterline();
+            }
+        }
+
+        function loadTileImages(files) {
+            showLoading(true);
+            loadedTileImages = [];
+
+            const promises = Array.from(files).slice(0, 4).map(file => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onload = () => resolve(img);
+                        img.onerror = reject;
+                        img.src = e.target.result;
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            });
+
+            Promise.all(promises)
+                .then(images => {
+                    loadedTileImages = images;
+                    applyTilesToWaterline();
+                    showLoading(false);
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    alert('Failed to load images');
+                    showLoading(false);
+                });
+        }
+
+        function applyTilesToWaterline() {
+            if (loadedTileImages.length === 0 || !waterlineMesh) return;
+
+            const { tilesAround, tileSizeMeters } = waterlineMesh.userData;
+
+            // Create a texture that's exactly tilesAround tiles wide and 1 tile tall
+            const tilePixelSize = 256; // Good resolution per tile
+            const canvasWidth = tilesAround * tilePixelSize;
+            const canvasHeight = tilePixelSize; // 1 tile tall
+
+            const canvas = document.createElement('canvas');
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+            const ctx = canvas.getContext('2d');
+
+            // Fill with random tiles
+            for (let col = 0; col < tilesAround; col++) {
+                const randomTile = loadedTileImages[Math.floor(Math.random() * loadedTileImages.length)];
+                ctx.drawImage(
+                    randomTile,
+                    col * tilePixelSize,
+                    0,
+                    tilePixelSize,
+                    tilePixelSize
+                );
+            }
+
+            // Create texture
+            const texture = new THREE.Texture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.ClampToEdgeWrapping;
+            texture.minFilter = THREE.LinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            texture.needsUpdate = true;
+
+            // Dispose old texture
+            if (waterlineMesh.material.map) {
+                waterlineMesh.material.map.dispose();
+            }
+
+            waterlineMesh.material.map = texture;
+            waterlineMesh.material.needsUpdate = true;
+
+            console.log(`Applied ${tilesAround} tiles around ${poolShape} pool (${tileSizeInches}" tiles)`);
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Event listeners
+        document.getElementById('waterlineTiles').addEventListener('change', (e) => {
+            const files = e.target.files;
+            if (files.length === 0) return;
+
+            const previewContainer = document.getElementById('tile-previews');
+            previewContainer.innerHTML = '';
+
+            Array.from(files).slice(0, 4).forEach(file => {
+                if (!file.type.match('image.*')) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    previewContainer.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+
+            loadTileImages(files);
+        });
+
+        document.getElementById('applyBtn').addEventListener('click', () => {
+            poolLength = parseFloat(document.getElementById('poolLength').value);
+            poolWidth = parseFloat(document.getElementById('poolWidth').value);
+            poolDepth = parseFloat(document.getElementById('poolDepth').value);
+            tileSizeInches = parseInt(document.getElementById('tileSize').value);
+            waterOpacity = parseFloat(document.getElementById('waterOpacity').value);
+            poolShape = document.getElementById('poolShape').value;
+            createPool();
+        });
+
+        document.getElementById('poolShape').addEventListener('change', (e) => {
+            poolShape = e.target.value;
+            createPool();
+        });
+
+        document.getElementById('tileSize').addEventListener('input', e => {
+            document.getElementById('tileSizeValue').textContent = e.target.value + '"×' + e.target.value + '"';
+        });
+
+        document.getElementById('poolLength').addEventListener('input', e => {
+            document.getElementById('lengthValue').textContent = e.target.value + 'm';
+        });
+
+        document.getElementById('poolWidth').addEventListener('input', e => {
+            document.getElementById('widthValue').textContent = e.target.value + 'm';
+        });
+
+        document.getElementById('poolDepth').addEventListener('input', e => {
+            document.getElementById('depthValue').textContent = e.target.value + 'm';
+        });
+
+        document.getElementById('waterOpacity').addEventListener('input', e => {
+            document.getElementById('opacityValue').textContent = e.target.value;
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.addEventListener('load', initScene);
+    </script>
+</body>
+</html>

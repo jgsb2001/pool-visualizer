@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /Users/jonathangibson/Desktop/_Pool log --oneline -10)",
+      "Bash(find:*)",
+      "Bash(npm install:*)",
+      "Bash(kill:*)",
+      "Bash(curl:*)",
+      "Bash(npm test:*)",
+      "Bash(node:*)",
+      "Bash(# Check if Next.js is bundling its own React that conflicts ls node_modules/next/dist/compiled/react/)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(npm ls:*)",
+      "Bash(npm run build:*)",
+      "Bash(xargs -I{} sh -c 'echo \"\"=== {} ===\"\" && grep \"\"\\\\\"\"version\\\\\"\"\"\" {}')",
+      "Bash(npx next:*)",
+      "Bash(ls:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run dev:*)",
+      "WebFetch(domain:polyhaven.com)",
+      "WebFetch(domain:api.polyhaven.com)",
+      "WebFetch(domain:ambientcg.com)",
+      "Bash(unzip:*)"
+    ]
+  }
+}
